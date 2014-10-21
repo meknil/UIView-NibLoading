@@ -81,7 +81,25 @@
         if (secondItem == containerView)
             secondItem = self;
         
-        [self addConstraint:[NSLayoutConstraint constraintWithItem:firstItem attribute:constraint.firstAttribute relatedBy:constraint.relation toItem:secondItem attribute:constraint.secondAttribute multiplier:constraint.multiplier constant:constraint.constant]];
+        NSLayoutConstraint *newConstraint = [NSLayoutConstraint constraintWithItem:firstItem attribute:constraint.firstAttribute relatedBy:constraint.relation toItem:secondItem attribute:constraint.secondAttribute multiplier:constraint.multiplier constant:constraint.constant];
+        [self addConstraint:newConstraint];
+        
+        // Reconnect outlets (as suggested by Codewaves commented on Feb 12)
+        @autoreleasepool
+        {
+            unsigned int numberOfProperties = 0;
+            objc_property_t *propertyArray = class_copyPropertyList([self class], &numberOfProperties);
+            
+            for (NSUInteger i = 0; i < numberOfProperties; i++)
+            {
+                objc_property_t property = propertyArray[i];
+                NSString *name = [[NSString alloc] initWithUTF8String:property_getName(property)];
+                id        value = [self valueForKey:name];
+                if (value == constraint)
+                    [self setValue:newConstraint forKey:name];
+            }
+            free(propertyArray);
+        }
     }
 }
 
